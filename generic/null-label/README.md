@@ -30,16 +30,16 @@ Instead pin to the release tag (e.g. `ref=tagsx.y.z`) of one of our [latest rele
 
 ```hcl
 module eg_prod_appname_api_label {
-  source      = github.com/Wycliffe-USA/terraform-modules//generic/null-label?ref=master
-  namespace   = eg
-  name        = appname
-  component   = api
-  environment = prod
-  attributes  = [public]
+  source      = "github.com/Wycliffe-USA/terraform-modules//generic/null-label?ref=master"
+  namespace   = "eg"
+  name        = "appname"
+  component   = "api"
+  environment = "prod"
+  attributes  = ["public"]
   delimiter   = -
 
   tags = {
-    BusinessUnit = XYZ,
+    BusinessUnit = "XYZ",
     Snapshot     = true
   }
 }
