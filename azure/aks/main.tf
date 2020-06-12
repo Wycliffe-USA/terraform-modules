@@ -99,7 +99,8 @@ resource "azuread_application" "aks-aad-cli" {
   required_resource_access {
     resource_app_id = azuread_application.aks-aad-srv.application_id
     resource_access {
-      id   = azuread_application.aks-aad-srv.oauth2_permissions.0.id
+      # id   = azuread_application.aks-aad-srv.oauth2_permissions.0.id
+      id   = [for permission in azuread_application.aks-aad-srv.oauth2_permissions : permission.id][0]
       type = "Scope"
     }
   }
