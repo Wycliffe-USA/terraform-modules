@@ -99,7 +99,9 @@ resource "azuread_application" "aks-aad-cli" {
   required_resource_access {
     resource_app_id = azuread_application.aks-aad-srv.application_id
     resource_access {
-      id   = azuread_application.aks-aad-srv.oauth2_permissions.0.id
+      # id   = azuread_application.aks-aad-srv.oauth2_permissions.0.id
+      # id   = [for permission in azuread_application.aks-aad-srv.oauth2_permissions : permission.id][0]
+      id = "2aacec3e-e7ad-40e0-b563-e7bff4a283c1"
       type = "Scope"
     }
   }
@@ -285,6 +287,7 @@ resource "null_resource" "delay" {
     ]
   }
 
+  tags = var.aks_label_tags
   depends_on = [
     azurerm_role_assignment.aks_sp_to_aks_uai_managed_identity_operator,
     azuread_service_principal_password.aks_sp_pwd

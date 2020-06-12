@@ -53,3 +53,7 @@ output "user_assigned_identity_client_id" {
 output "azuread_service_principal_aks_sp_object_id" {
   value = azuread_service_principal.aks_sp.object_id
 }
+
+output "oauth2" {
+  value = azuread_application.aks-aad-srv.oauth2_permissions
+}
