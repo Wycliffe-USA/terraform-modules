@@ -1,6 +1,5 @@
 variable "agic_package_version" {
-  default = "1.2.0-rc1"
-#   default = "1.0.0"
+  default = "1.2.0"
 }
 
 variable "helm_release_agic_timeout" {
