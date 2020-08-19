@@ -2,6 +2,7 @@ resource "kubernetes_deployment" "mic" {
   metadata {
     name      = "mic"
     namespace = "default"
+
     labels = {
       component = "mic"
       k8s-app   = "aad-pod-id"
@@ -10,6 +11,7 @@ resource "kubernetes_deployment" "mic" {
 
   spec {
     replicas = 2
+
     selector {
       match_labels = {
         component = "mic"
@@ -25,23 +27,35 @@ resource "kubernetes_deployment" "mic" {
         }
       }
 
-
       spec {
         service_account_name = kubernetes_service_account.aad-pod-id-mic-service-account.metadata.0.name
         automount_service_account_token = true
+
         container {
-          name              = "mic"
-          image             = "mcr.microsoft.com/k8s/aad-pod-identity/mic:1.5.5"
+          name  = "mic"
+          image = "mcr.microsoft.com/k8s/aad-pod-identity/mic:1.6.2"
           image_pull_policy = "Always"
-          args = [
+          args  = [
             "--cloudconfig=/etc/kubernetes/azure.json",
             "--logtostderr"
           ]
+
+          env {
+            name = "MIC_POD_NAMESPACE"
+
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+
           resources {
             limits {
               cpu    = "200m"
-              memory = "512Mi"
+              memory = "1Gi"
             }
+
             requests {
               cpu    = "100m"
               memory = "256Mi"
@@ -51,7 +65,7 @@ resource "kubernetes_deployment" "mic" {
           liveness_probe {
             http_get {
               path = "/healthz"
-              port = 8080
+              port = "8080"
             }
 
             initial_delay_seconds = 10
@@ -64,15 +78,17 @@ resource "kubernetes_deployment" "mic" {
             read_only  = true
           }
         }
+
         volume {
           name = "k8s-azure-file"
+
           host_path {
             path = "/etc/kubernetes/azure.json"
           }
         }
 
         node_selector = {
-          "beta.kubernetes.io/os" = "linux"
+          "kubernetes.io/os" = "linux"
         }
       }
     }

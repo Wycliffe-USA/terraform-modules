@@ -1,3 +1,8 @@
+#It's recommended to pull a new version of this yaml file from Microsoft's repository when an update is done.
+#This file should be available here: https://github.com/Azure/aad-pod-identity/blob/master/deploy/infra/deployment-rbac.yaml
+#HOWEVER, what's represented here are really only the CustomResourceDefinitions that we couldn't transform to native terraform code.
+#So, if you have new sections being added below, look for them elsewhere in this module, and update the native terraform code there.
+#For assistance converting yml to terraform, use the k2tf.exe tool.  (Hint, remove CustomResourceDefinitions)
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
