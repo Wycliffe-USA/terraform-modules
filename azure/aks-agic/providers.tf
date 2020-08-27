@@ -4,7 +4,7 @@ data "azurerm_kubernetes_cluster" "aks" {
 }
 
 provider "helm" {
-  version = "1.1.1"
+  version = "~> 1.2"
   alias = "aks"
 
   kubernetes {

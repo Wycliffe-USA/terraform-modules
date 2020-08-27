@@ -4,7 +4,7 @@ terraform {
 
 # Use admin credentials to initialize kubernetes provider.
 provider "kubernetes" {
-  version = "= 1.11.1"
+  version = "~> 1.12"
   host                   = azurerm_kubernetes_cluster.aks.kube_admin_config.0.host
   username               = azurerm_kubernetes_cluster.aks.kube_config.0.username
   password               = azurerm_kubernetes_cluster.aks.kube_config.0.password
