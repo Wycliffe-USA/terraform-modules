@@ -13,9 +13,9 @@ However, if you have multiple different kinds of resources (e.g. instances, secu
 
 NOTE The `null` refers to the primary Terraform [provider](httpswww.terraform.iodocsprovidersnullindex.html) used in this module.
 
-Releases of this module from `0.12.0` onward support `HCL2` and only work with Terraform 0.12 or newer.  Releases prior to this are compatible with earlier versions of terraform like Terraform 0.11.
+Releases of this module from `1.1.0` only work with Terraform 0.13 or newer.  Releases prior to this are compatible with earlier versions of terraform like Terraform 0.11.
 
-Originally based on https://github.com/cloudposse/terraform-null-label, version 0.16.0.
+Originally based on https://github.com/cloudposse/terraform-null-label, version 0.21.0.
 
 ---
 
