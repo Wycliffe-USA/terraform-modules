@@ -1,26 +1,10 @@
-# # Locals block for hardcoded names. 
-# locals {
-#     backend_address_pool_name      = "${azurerm_virtual_network.test.name}-beap"
-#     frontend_port_name             = "${azurerm_virtual_network.test.name}-feport"
-#     frontend_ip_configuration_name = "${azurerm_virtual_network.test.name}-feip"
-#     http_setting_name              = "${azurerm_virtual_network.test.name}-be-htst"
-#     listener_name                  = "${azurerm_virtual_network.test.name}-httplstn"
-#     request_routing_rule_name      = "${azurerm_virtual_network.test.name}-rqrt"
-#     app_gateway_subnet_name = "appgwsubnet"
-# }
-
 /*
  * Configure a default label to use on resources.
  * Creates a label unless one is passed via a variable, via count.
  */
-module "aks_label" {
-  source      = "github.com/Wycliffe-USA/terraform-modules//generic/null-label?ref=0.1.0"
-  namespace   = var.app_namespace
-  environment = var.app_env
-  name        = var.app_name
-  label_order = var.aks_label_order
+locals {
+  app_label                   = var.app_namespace ? "${var.app_namespace}-${var.app_name}-${var.app_env}" : "${var.app_name}-${var.app_env}"
 }
-
 
 /*
  * Recieve a resource group.
@@ -41,10 +25,10 @@ data "azurerm_subscription" "current" {}
  */
  # AAD aks Backend App - For server component (kubernetes API) that provides user authentication.
 resource "azuread_application" "aks-aad-srv" {
-  name                       = "${module.aks_label.id}-aks-srv"
-  homepage                   = "https://${module.aks_label.id}-aks-srv"
-  identifier_uris            = ["https://${module.aks_label.id}-aks-srv"]
-  reply_urls                 = ["https://${module.aks_label.id}-aks-srv"]
+  name                       = "${local.app_label}-aks-srv"
+  homepage                   = "https://${local.app_label}-aks-srv"
+  identifier_uris            = ["https://${local.app_label}-aks-srv"]
+  reply_urls                 = ["https://${local.app_label}-aks-srv"]
   type                       = "webapp/api"
   group_membership_claims    = "All"
   available_to_other_tenants = false
@@ -92,9 +76,9 @@ resource "azuread_application_password" "aks-aad-srv" {
  * AAD AKS kubectl app - For kubectl CLI component that provides user authentication through CLI.
  */
 resource "azuread_application" "aks-aad-cli" {
-  name       = "${module.aks_label.id}-aks-cli"
-  homepage   = "https://${module.aks_label.id}-aks-cli"
-  reply_urls = ["https://${module.aks_label.id}-aks-cli"]
+  name       = "${local.app_label}-aks-cli"
+  homepage   = "https://${local.app_label}-aks-cli"
+  reply_urls = ["https://${local.app_label}-aks-cli"]
   type       = "native"
   required_resource_access {
     resource_app_id = azuread_application.aks-aad-srv.application_id
@@ -115,17 +99,17 @@ resource "azuread_service_principal" "aks-aad-cli" {
  * Creates Azure AD group with access to this kubernetes cluster
  */
 resource "azuread_group" "aks-aad-clusteradmins" {
-  name = "${module.aks_label.id}-aks-clusteradmins"
+  name = "${local.app_label}-aks-clusteradmins"
 }
 
 /*************************************************************
  * Creates a service principal application that Kubernetes uses to interact with Azure.
  */
 resource "azuread_application" "aks_sp" {
-  name                       = module.aks_label.id
-  homepage                   = "https://${module.aks_label.id}"
-  identifier_uris            = ["https://${module.aks_label.id}"]
-  reply_urls                 = ["https://${module.aks_label.id}"]
+  name                       = local.app_label
+  homepage                   = "https://${local.app_label}"
+  identifier_uris            = ["https://${local.app_label}"]
+  reply_urls                 = ["https://${local.app_label}"]
   available_to_other_tenants = false
   oauth2_allow_implicit_flow = false
 }
@@ -162,7 +146,7 @@ resource "azurerm_user_assigned_identity" "aks_user_assigned_identity" {
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
-  name = "${module.aks_label.id}-identity"
+  name = "${local.app_label}-identity"
 }
 
 //Give this managed identity 'Operator' role on our service pricipal.
@@ -229,10 +213,10 @@ resource "null_resource" "delay" {
  * Kubernetes cluster creation
  */
  resource "azurerm_kubernetes_cluster" "aks" {
-  name                = module.aks_label.id
+  name                = local.app_label
   location            = var.azure_region
   resource_group_name = data.azurerm_resource_group.rg.name
-  dns_prefix          = module.aks_label.id
+  dns_prefix          = local.app_label
 
   network_profile {
     network_plugin        = var.aks_network_plugin
@@ -300,7 +284,7 @@ resource "null_resource" "delay" {
 resource "kubernetes_cluster_role_binding" "cluster_admin" {
   //Gives AD group member access to log into dashboard.
   metadata {
-    name = "${module.aks_label.id}-admins"
+    name = "${local.app_label}-admins"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -320,7 +304,7 @@ resource "kubernetes_cluster_role_binding" "cluster_admin" {
 resource "kubernetes_cluster_role_binding" "service_account" {
   //Give service account access to dashboard.
   metadata {
-    name = "${module.aks_label.id}-service-account"
+    name = "${local.app_label}-service-account"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
