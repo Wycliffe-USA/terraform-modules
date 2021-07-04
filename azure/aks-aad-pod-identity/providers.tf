@@ -1,10 +1,18 @@
+terraform {
+  required_version = "~> 1.0.0"
+  required_providers {
+    kubernetes = {
+      source = "hashicorp/helm"
+      version = "2.2.0"
+    }
+  }
+}
 data "azurerm_kubernetes_cluster" "aks" {
   name                = var.aks_name
   resource_group_name = var.aks_resource_group
 }
 
 provider "helm" {
-  version = "~> 1.2"
   alias = "aks"
 
   kubernetes {
