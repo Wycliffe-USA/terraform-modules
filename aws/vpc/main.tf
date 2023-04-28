@@ -282,9 +282,8 @@ resource "aws_route" "private_ipv6_egress" {
 ################################################################################
 # Database routes
 ################################################################################
-
 resource "aws_route_table" "database" {
-  for_each = var.create_vpc && var.create_database_subnet_route_table && length(var.database_subnets) > 0 ? var.database_subnets : {}
+  for_each = var.create_vpc && length(var.database_subnets) > 0 ? var.database_subnets : {}
 
   vpc_id = local.vpc_id
 
@@ -332,27 +331,11 @@ resource "aws_route" "database_ipv6_egress" {
 }
 
 ################################################################################
-# Redshift routes
-################################################################################
-
-resource "aws_route_table" "redshift" {
-  for_each = var.create_vpc && var.create_redshift_subnet_route_table && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
-
-  vpc_id = local.vpc_id
-
-  tags = merge(
-    local.tags,
-    var.redshift_route_table_tags,
-    { "Name" = "${local.name}-${each.value.az}-${var.redshift_subnet_suffix}" },
-  )
-}
-
-################################################################################
 # Elasticache routes
 ################################################################################
 
 resource "aws_route_table" "elasticache" {
-  for_each = var.create_vpc && var.create_elasticache_subnet_route_table && length(var.elasticache_subnets) > 0 ? var.elasticache_subnets : {}
+  for_each = var.create_vpc && length(var.elasticache_subnets) > 0 ? var.elasticache_subnets : {}
 
   vpc_id = local.vpc_id
 
@@ -373,10 +356,50 @@ resource "aws_route_table" "intra" {
   vpc_id = local.vpc_id
 
   tags = merge(
-    { "Name" = "${local.name}-${var.intra_subnet_suffix}" },
+    { "Name" = "${local.name}-${each.value.az}-${var.intra_subnet_suffix}" },
     local.tags,
     var.intra_route_table_tags,
   )
+}
+
+################################################################################
+# Kubernetes routes
+################################################################################
+
+resource "aws_route_table" "kubernetes" {
+  for_each = var.create_vpc && length(var.kubernetes_subnets) > 0 ? var.kubernetes_subnets : {}
+
+  vpc_id = local.vpc_id
+
+  tags = merge(
+    { "Name" = "${local.name}-${each.value.az}-${var.kubernetes_subnet_suffix}" },
+    local.tags,
+    var.kubernetes_route_table_tags,
+  )
+}
+
+resource "aws_route" "kubernetes_nat_gateway" {
+  for_each = var.create_vpc && var.enable_nat_gateway && !(var.enable_transit_gateway) && length(var.kubernetes_subnets) > 0 ? var.kubernetes_subnets : {}
+
+  route_table_id         = aws_route_table.kubernetes[each.key].id
+  destination_cidr_block = var.nat_gateway_destination_cidr_block #0.0.0.0/0 by default.
+  nat_gateway_id         = !(var.one_nat_gateway_per_az) ? aws_nat_gateway.this[0].id : local.availability_zone_nat_gateways[local.availability_zone_public_subnets[each.value.az][0]][0]
+
+  timeouts {
+    create = "5m"
+  }
+}
+
+resource "aws_route" "kubernetes_transit_gateway" {
+  for_each = var.create_vpc && var.enable_transit_gateway && !(var.enable_nat_gateway) && length(var.kubernetes_subnets) > 0 ? var.kubernetes_subnets : {}
+
+  route_table_id         = aws_route_table.kubernetes[each.key].id
+  destination_cidr_block = var.transit_gateway_destination_cidr_block #0.0.0.0/0 by default.
+  transit_gateway_id     = var.transit_gateway_id
+
+  timeouts {
+    create = "5m"
+  }
 }
 
 ################################################################################
@@ -432,6 +455,31 @@ resource "aws_subnet" "private" {
 }
 
 ################################################################################
+# Redshift routes
+################################################################################
+resource "aws_route_table" "redshift" {
+  for_each = var.create_vpc && !(var.enable_public_redshift) && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
+  vpc_id = local.vpc_id
+
+  tags = merge(
+    local.tags,
+    var.redshift_route_table_tags,
+    { "Name" = "${local.name}-${each.value.az}-${var.redshift_subnet_suffix}" },
+  )
+}
+
+resource "aws_route_table" "redshift_public" {
+  for_each = var.create_vpc && var.enable_public_redshift && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
+  vpc_id = local.vpc_id
+
+  tags = merge(
+    local.tags,
+    var.redshift_route_table_tags,
+    { "Name" = "${local.name}-${each.value.az}-${var.redshift_subnet_suffix}" },
+  )
+}
+
+################################################################################
 # Database subnet
 ################################################################################
 
@@ -443,7 +491,7 @@ resource "aws_subnet" "database" {
   availability_zone               = each.value.az
   assign_ipv6_address_on_creation = var.database_subnet_assign_ipv6_address_on_creation == null ? var.assign_ipv6_address_on_creation : var.database_subnet_assign_ipv6_address_on_creation
 
-  ipv6_cidr_block = var.enable_ipv6 && length(var.database_subnet_ipv6_prefixes) > 0 ? cidrsubnet(aws_vpc.this[0].ipv6_cidr_block, 8, var.database_subnet_ipv6_prefixes[index(var.private_subnets, each.key)]) : null
+  ipv6_cidr_block = var.enable_ipv6 && length(var.database_subnet_ipv6_prefixes) > 0 ? cidrsubnet(aws_vpc.this[0].ipv6_cidr_block, 8, var.database_subnet_ipv6_prefixes[index(var.database_subnets, each.key)]) : null
 
   tags = merge(
     local.tags,
@@ -460,13 +508,37 @@ resource "aws_db_subnet_group" "database" {
 
   name        = lower(coalesce(var.database_subnet_group_name, local.name))
   description = "Database subnet group for ${local.name}"
-  subnet_ids  = aws_subnet.database[*].id
+  subnet_ids  = [ for subnet in aws_subnet.database : subnet.id ]
 
   tags = merge(
     local.tags,
     var.database_subnet_group_tags,
     {
       "Name" = lower(coalesce(var.database_subnet_group_name, local.name))
+    },
+  )
+}
+
+################################################################################
+# Kubernetes subnet
+################################################################################
+
+resource "aws_subnet" "kubernetes" {
+  for_each = var.create_vpc && length(var.kubernetes_subnets) > 0 ? var.kubernetes_subnets : {}
+
+  vpc_id                          = local.vpc_id
+  cidr_block                      = each.value.cidr_block
+  availability_zone               = each.value.az
+  assign_ipv6_address_on_creation = var.kubernetes_subnet_assign_ipv6_address_on_creation == null ? var.assign_ipv6_address_on_creation : var.kubernetes_subnet_assign_ipv6_address_on_creation
+
+  ipv6_cidr_block = var.enable_ipv6 && length(var.kubernetes_subnet_ipv6_prefixes) > 0 ? cidrsubnet(aws_vpc.this[0].ipv6_cidr_block, 8, var.kubernetes_subnet_ipv6_prefixes[index(var.kubernetes_subnets, each.key)]) : null
+
+  tags = merge(
+    local.tags,
+    var.kubernetes_subnet_tags,
+    {
+      Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.kubernetes_subnet_suffix}"
+      security_posture = "private"
     },
   )
 }
@@ -538,7 +610,7 @@ resource "aws_elasticache_subnet_group" "elasticache" {
 
   name        = coalesce(var.elasticache_subnet_group_name, local.name)
   description = "ElastiCache subnet group for ${local.name}"
-  subnet_ids  = aws_subnet.elasticache[*].id
+  subnet_ids  = [ for subnet in aws_subnet.elasticache : subnet.id ]
 
   tags = merge(
     local.tags,
@@ -848,6 +920,57 @@ resource "aws_network_acl_rule" "database_outbound" {
 }
 
 ################################################################################
+# Kubernetes Network ACLs
+################################################################################
+
+resource "aws_network_acl" "kubernetes" {
+  count = var.create_vpc && var.kubernetes_dedicated_network_acl && length(var.kubernetes_subnets) > 0 ? 1 : 0
+
+  vpc_id     = local.vpc_id
+  subnet_ids = aws_subnet.kubernetes[*].id
+
+  tags = merge(
+    local.tags,
+    var.kubernetes_acl_tags,
+    { "Name" = "${local.name}-${var.kubernetes_subnet_suffix}" },
+  )
+}
+
+resource "aws_network_acl_rule" "kubernetes_inbound" {
+  count = var.create_vpc && var.kubernetes_dedicated_network_acl && length(var.kubernetes_subnets) > 0 ? length(var.kubernetes_inbound_acl_rules) : 0
+
+  network_acl_id = aws_network_acl.kubernetes[0].id
+
+  egress          = false
+  rule_number     = var.kubernetes_inbound_acl_rules[count.index]["rule_number"]
+  rule_action     = var.kubernetes_inbound_acl_rules[count.index]["rule_action"]
+  from_port       = lookup(var.kubernetes_inbound_acl_rules[count.index], "from_port", null)
+  to_port         = lookup(var.kubernetes_inbound_acl_rules[count.index], "to_port", null)
+  icmp_code       = lookup(var.kubernetes_inbound_acl_rules[count.index], "icmp_code", null)
+  icmp_type       = lookup(var.kubernetes_inbound_acl_rules[count.index], "icmp_type", null)
+  protocol        = var.kubernetes_inbound_acl_rules[count.index]["protocol"]
+  cidr_block      = lookup(var.kubernetes_inbound_acl_rules[count.index], "cidr_block", null)
+  ipv6_cidr_block = lookup(var.kubernetes_inbound_acl_rules[count.index], "ipv6_cidr_block", null)
+}
+
+resource "aws_network_acl_rule" "kubernetes_outbound" {
+  count = var.create_vpc && var.kubernetes_dedicated_network_acl && length(var.kubernetes_subnets) > 0 ? length(var.kubernetes_outbound_acl_rules) : 0
+
+  network_acl_id = aws_network_acl.database[0].id
+
+  egress          = true
+  rule_number     = var.kubernetes_outbound_acl_rules[count.index]["rule_number"]
+  rule_action     = var.kubernetes_outbound_acl_rules[count.index]["rule_action"]
+  from_port       = lookup(var.kubernetes_outbound_acl_rules[count.index], "from_port", null)
+  to_port         = lookup(var.kubernetes_outbound_acl_rules[count.index], "to_port", null)
+  icmp_code       = lookup(var.kubernetes_outbound_acl_rules[count.index], "icmp_code", null)
+  icmp_type       = lookup(var.kubernetes_outbound_acl_rules[count.index], "icmp_type", null)
+  protocol        = var.kubernetes_outbound_acl_rules[count.index]["protocol"]
+  cidr_block      = lookup(var.kubernetes_outbound_acl_rules[count.index], "cidr_block", null)
+  ipv6_cidr_block = lookup(var.kubernetes_outbound_acl_rules[count.index], "ipv6_cidr_block", null)
+}
+
+################################################################################
 # Redshift Network ACLs
 ################################################################################
 
@@ -1001,35 +1124,36 @@ resource "aws_route_table_association" "private" {
   for_each = var.create_vpc && length(var.private_subnets) > 0 ? var.private_subnets : {}
 
   subnet_id = aws_subnet.private[each.key].id
+  #Private is the only one with a route table per subnet.
   route_table_id = aws_route_table.private[each.key].id
 }
 
 resource "aws_route_table_association" "database" {
-  for_each = var.create_vpc && length(var.database_subnets) > 0 ? var.database_subnets : {}
+  for_each = var.create_vpc && var.create_database_subnet_route_table && length(var.database_subnets) > 0 ? var.database_subnets : {}
 
-  subnet_id      = aws_subnet.private[each.key].id
-  route_table_id = aws_route_table.private[each.key].id
+  subnet_id      = aws_subnet.database[each.key].id
+  route_table_id = aws_route_table.database[0].id
 }
 
 resource "aws_route_table_association" "redshift" {
   for_each = var.create_vpc && !(var.enable_public_redshift) && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
 
-  subnet_id      = aws_subnet.private[each.key].id
-  route_table_id = aws_route_table.private[each.key].id
+  subnet_id      = aws_subnet.redshift[each.key].id
+  route_table_id = aws_route_table.redshift[0].id
 }
 
 resource "aws_route_table_association" "redshift_public" {
-  for_each = var.create_vpc && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
+  for_each = var.create_vpc  && var.enable_public_redshift && length(var.redshift_subnets) > 0 ? var.redshift_subnets : {}
 
-  subnet_id = aws_subnet.private[each.key].id
-  route_table_id = aws_route_table.private[each.key].id
+  subnet_id = aws_subnet.redshift[each.key].id
+  route_table_id = aws_route_table.redshift[0].id
 }
 
 resource "aws_route_table_association" "elasticache" {
-  for_each = var.create_vpc && length(var.elasticache_subnets) > 0 ? var.elasticache_subnets : {}
+  for_each = var.create_vpc && var.create_elasticache_subnet_route_table && length(var.elasticache_subnets) > 0 ? var.elasticache_subnets : {}
 
-  subnet_id = aws_subnet.private[each.key].id
-  route_table_id = aws_route_table.private[each.key].id
+  subnet_id = aws_subnet.elasticache[each.key].id
+  route_table_id = aws_route_table.elasticache[0].id
 }
 
 resource "aws_route_table_association" "intra" {

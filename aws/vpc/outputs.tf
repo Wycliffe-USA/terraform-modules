@@ -28,6 +28,26 @@ output "default_route_table_id" {
   value       = try(aws_vpc.this[0].default_route_table_id, "")
 }
 
+output "kubernetes_subnets" {
+  description = "List of IDs of kubernetes subnets"
+  value       = [ for subnet in aws_subnet.kubernetes : subnet.id ]
+}
+
+output "kubernetes_subnet_arns" {
+  description = "List of ARNs of kubernetes subnets"
+  value       = [ for subnet in aws_subnet.kubernetes : subnet.arn ]
+}
+
+output "kubernetes_subnets_cidr_blocks" {
+  description = "List of cidr_blocks of kubernetes subnets"
+  value       = [ for subnet in aws_subnet.kubernetes : subnet.cidr_block ]
+}
+
+output "kubernetes_subnets_ipv6_cidr_blocks" {
+  description = "List of IPv6 cidr_blocks of kubernetes subnets in an IPv6 enabled VPC"
+  value       = [ for subnet in aws_subnet.kubernetes : subnet.ipv6_cidr_block ]
+}
+
 output "vpc_instance_tenancy" {
   description = "Tenancy of instances spin up within VPC"
   value       = try(aws_vpc.this[0].instance_tenancy, "")

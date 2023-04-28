@@ -130,6 +130,81 @@ variable "instance_tenancy" {
   default     = "default"
 }
 
+variable "kubernetes_acl_tags" {
+  description = "Additional tags for the kubernetes subnets network ACL"
+  type        = map(string)
+  default     = {}
+}
+
+variable "kubernetes_dedicated_network_acl" {
+  description = "Whether to use dedicated network ACL (not default) and custom rules for kubernetes subnets"
+  type        = bool
+  default     = false
+}
+
+variable "kubernetes_inbound_acl_rules" {
+  description = "Kubernetes subnets inbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+
+variable "kubernetes_outbound_acl_rules" {
+  description = "Kubernetes subnets outbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "kubernetes_route_table_tags" {
+  description = "Additional tags for the kubernetes route tables"
+  type        = map(string)
+  default     = {}
+}
+
+variable "kubernetes_subnet_assign_ipv6_address_on_creation" {
+  description = "Assign IPv6 address on kubernetes subnet, must be disabled to change IPv6 CIDRs. This is the IPv6 equivalent of map_public_ip_on_launch"
+  type        = bool
+  default     = null
+}
+
+variable "kubernetes_subnet_suffix" {
+  description = "Suffix to append to kubernetes subnets name"
+  type        = string
+  default     = "k8s"
+}
+
+variable "kubernetes_subnet_ipv6_prefixes" {
+  description = "Assigns IPv6 kubernetes subnet id based on the Amazon provided /56 prefix base 10 integer (0-256). Must be of equal length to the corresponding IPv4 subnet list"
+  type        = list(string)
+  default     = []
+}
+
+variable "kubernetes_subnet_tags" {
+  description = "Additional tags for the kubernetes subnets"
+  type        = map(string)
+  default     = {}
+}
+
 variable "public_subnet_suffix" {
   description = "Suffix to append to public subnets name"
   type        = string
@@ -166,6 +241,12 @@ variable "elasticache_subnet_suffix" {
   default     = "elasticache"
 }
 
+variable "kubernetes_subnets" {
+  description = "A map of hashes containing kubernetes subnets inside the VPC"
+  type        = map(any)
+  default     = {}
+}
+
 variable "public_subnets" {
   description = "A map of hashes containing public subnets inside the VPC"
   type        = map(any)
@@ -196,18 +277,6 @@ variable "private_subnets" {
   #     }
   #   }
   # }
-}
-variable "foo" {
-  default = {
-    bypass                     = null,
-    ip_rules                   = null,
-    virtual_network_subnet_ids = null
-  }
-  type = object({
-    bypass                     = list(string)
-    ip_rules                   = list(string)
-    virtual_network_subnet_ids = list(string)
-  })
 }
 
 variable "database_subnets" {
