@@ -420,7 +420,7 @@ resource "aws_subnet" "public" {
 
   tags = merge(
     local.tags,
-    var.private_subnet_tags,
+    var.public_subnet_tags,
     lookup(var.public_subnet_tags_per_az, each.value.az, {}),
     {
       Name             = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.public_subnet_suffix}"

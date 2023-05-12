@@ -11,6 +11,28 @@ variable "app_env" {
 ################################################################################
 # Cluster
 ################################################################################
+variable "load_balancer_controller_helm_chart_version" {
+  description = "Helm chart version for application-load-balancer controller"
+  type        = string
+  default     = "1.5.2"
+}
+
+variable "cert_manager_controller_helm_chart_version" {
+  description = "Helm chart version for cert-manager"
+  type        = string
+  default     = "v1.11.1"
+}
+
+variable "certificate_issuer_email" {
+  description = "Email address for cert-manager issued certificates"
+  type        = string
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "List of CIDR blocks which can access the Amazon EKS public API server endpoint"
+  type        = list(string)
+  default     = [ "0.0.0.0/0" ]
+}
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
@@ -21,12 +43,35 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)"
   type        = string
+  default     = "1.26"
+}
+
+
+
+variable "cluster_service_ipv4_cidr" {
+  description = "The CIDR block to assign Kubernetes service IP addresses from. EKS assigns addresses from either the 10.100.0.0/16 or 172.20.0.0/16 CIDR blocks. We override this to 10.11.2.0/20."
+  type        = string
+  default     = "10.11.16.0/20"
 }
 
 variable "default_instance_types" {
   description = "Default instance types."
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.small"]
+}
+
+variable "enable_cert_manager_controller" {
+  #Cert-Manager is usefule for end-to-end encryption, but cannot produce public certificates via Let's Encrypt because EKS cluster's don't support this.
+  #This is why it's disabled by default.
+  description = "Install cert-manager into the Kubernetes cluster"
+  type        = bool
+  default     = false
+}
+
+variable "enable_load_balancer_controller" {
+  description = "Install load-balancer into the Kubernetes cluster"
+  type        = bool
+  default     = true
 }
 
 variable "system_instance_types" {
@@ -114,5 +159,10 @@ variable "tags" {
 
 variable "vpc_id" {
   description = "The ID of the VPC for the cluster."
+  type        = string
+}
+
+variable "aws_region" {
+  description = "The aws_region."
   type        = string
 }
