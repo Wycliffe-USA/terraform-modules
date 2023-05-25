@@ -49,9 +49,9 @@ variable "cluster_version" {
 
 
 variable "cluster_service_ipv4_cidr" {
-  description = "The CIDR block to assign Kubernetes service IP addresses from. EKS assigns addresses from either the 10.100.0.0/16 or 172.20.0.0/16 CIDR blocks. We override this to 10.11.2.0/22."
+  description = "The CIDR block to assign Kubernetes service IP addresses from. EKS assigns addresses from either the 10.100.0.0/16 or 172.20.0.0/16 CIDR blocks. We override this to 10.11.4.0/22."
   type        = string
-  default     = "10.11.2.0/22"
+  default     = "10.11.4.0/22"
 }
 
 variable "default_instance_types" {
