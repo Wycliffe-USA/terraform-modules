@@ -2,16 +2,19 @@ variable "repo_name" {
   type = string
 }
 
-variable "ecsServiceRole_arn" {
+variable "ecs_service_role_arn" {
   type = string
+  default = ""
 }
 
-variable "ecsInstanceRole_arn" {
+variable "ecs_instance_role_arn" {
   type = string
+  default = ""
 }
 
-variable "cd_user_arn" {
+variable "eks_cluster_role_arn" {
   type = string
+  default = ""
 }
 
 variable "image_retention_count" {
@@ -23,7 +26,7 @@ variable "image_retention_tags" {
   default = ["latest"]
 }
 
-variable "vars" {
+variable "tags" {
   description = "Additional tags to add to resources created by this module."
   type        = map(any)
   default     = {}

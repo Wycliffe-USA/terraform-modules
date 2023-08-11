@@ -14,8 +14,12 @@ locals {
     },
     var.tags,
   )
+}
 
-  repo_policy = jsonencode({
+resource "aws_ecr_repository_policy" "ecs_policy" {
+  count      = var.ecs_instance_role_arn != "" ? 1 : 0
+  repository = aws_ecr_repository.repo.name
+  policy     = jsonencode({
     Version = "2008-10-17"
     Statement = [
       {
@@ -23,8 +27,8 @@ locals {
         Effect = "Allow"
         Principal = {
           AWS = [
-            var.ecsInstanceRole_arn,
-            var.ecsServiceRole_arn,
+            var.ecs_instance_role_arn,
+            var.ecs_service_role_arn,
           ]
         },
         Action = [
@@ -32,32 +36,46 @@ locals {
           "ecr:BatchGetImage",
           "ecr:BatchCheckLayerAvailability",
         ]
-      },
+      }
+    ]
+  })
+}
+
+resource "aws_ecr_repository_policy" "eks_policy" {
+  count      = var.eks_cluster_role_arn != "" ? 1 : 0
+  repository = aws_ecr_repository.repo.name
+  policy     = jsonencode({
+    Version = "2008-10-17"
+    Statement = [
       {
-        Sid    = "CD push/pull"
+        Sid    = "ECS Pull Access"
         Effect = "Allow"
-        Principal : {
-          AWS : var.cd_user_arn
+        Principal = {
+          AWS = [
+            var.eks_cluster_role_arn,
+          ]
         },
         Action = [
-          "ecr:PutImage",
-          "ecr:InitiateLayerUpload",
-          "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload",
-          "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
           "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetAuthorizationToken"
         ]
       }
     ]
   })
+}
 
+resource "aws_ecr_lifecycle_policy" "policy" {
+  count = var.image_retention_count > 0 ? 1 : 0
+
+  repository = aws_ecr_repository.repo.name
   /*
-   This lifecycle policy expires images older than the `var.image_retention_count` newest images and not matched by
-   any of the tags given in `var.image_retention_tags`. Each tag in `var.image_retention_tags` must be added as a
-   separate rule because the list of tags within a rule must all be present on an image for it to match the rule.
- */
-  lifecycle_policy = jsonencode({
+    This lifecycle policy expires images older than the `var.image_retention_count` newest images and not matched by
+    any of the tags given in `var.image_retention_tags`. Each tag in `var.image_retention_tags` must be added as a
+    separate rule because the list of tags within a rule must all be present on an image for it to match the rule.
+  */
+  policy     = jsonencode({
     rules = concat(
       [
         for i, tag in var.image_retention_tags : {
@@ -90,16 +108,4 @@ locals {
       ]
     )
   })
-}
-
-resource "aws_ecr_repository_policy" "policy" {
-  repository = aws_ecr_repository.repo.name
-  policy     = local.repo_policy
-}
-
-resource "aws_ecr_lifecycle_policy" "policy" {
-  count = var.image_retention_count > 0 ? 1 : 0
-
-  repository = aws_ecr_repository.repo.name
-  policy     = local.lifecycle_policy
 }
