@@ -24,8 +24,10 @@ variable "cert_manager_controller_helm_chart_version" {
 }
 
 variable "certificate_issuer_email" {
+  #Required if cert-manager is enabled.
   description = "Email address for cert-manager issued certificates"
   type        = string
+  default     = ""
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
