@@ -17,8 +17,6 @@ resource "aws_vpc" "this" {
   instance_tenancy               = var.instance_tenancy
   enable_dns_hostnames           = var.enable_dns_hostnames
   enable_dns_support             = var.enable_dns_support
-  enable_classiclink             = null # https://github.com/hashicorp/terraform/issues/31730
-  enable_classiclink_dns_support = null # https://github.com/hashicorp/terraform/issues/31730
 
   tags = merge(
     local.tags,
@@ -259,7 +257,7 @@ resource "aws_route" "private_custom_routes" {
   # One of the following targets must be provided
   egress_only_gateway_id    = lookup(each.value, "egress_only_gateway_id", null)
   gateway_id                = lookup(each.value, "gateway_id", null)
-  instance_id               = lookup(each.value, "instance_id", null)
+  # instance_id               = lookup(each.value, "instance_id", null)
   nat_gateway_id            = lookup(each.value, "nat_gateway_id", null)
   network_interface_id      = lookup(each.value, "network_interface_id", null)
   transit_gateway_id        = lookup(each.value, "transit_gateway_id", null)
@@ -1078,7 +1076,7 @@ resource "aws_network_acl_rule" "elasticache_outbound" {
 resource "aws_eip" "nat" {
   count = var.create_vpc && var.enable_nat_gateway && !(var.reuse_nat_ips) ? local.nat_gateway_count : 0
 
-  vpc = true
+  domain = "vpc"
 
   tags = merge(
     local.tags,
@@ -1262,7 +1260,6 @@ resource "aws_default_vpc" "this" {
 
   enable_dns_support   = var.default_vpc_enable_dns_support
   enable_dns_hostnames = var.default_vpc_enable_dns_hostnames
-  enable_classiclink   = null # https://github.com/hashicorp/terraform/issues/31730
 
   tags = merge(
     local.tags,

@@ -375,20 +375,6 @@ variable "enable_dns_support" {
   default     = true
 }
 
-# tflint-ignore: terraform_unused_declarations
-variable "enable_classiclink" {
-  description = "[DEPRECATED](https://github.com/hashicorp/terraform/issues/31730) Should be true to enable ClassicLink for the VPC. Only valid in regions and accounts that support EC2 Classic."
-  type        = bool
-  default     = null
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "enable_classiclink_dns_support" {
-  description = "[DEPRECATED](https://github.com/hashicorp/terraform/issues/31730) Should be true to enable ClassicLink DNS Support for the VPC. Only valid in regions and accounts that support EC2 Classic."
-  type        = bool
-  default     = null
-}
-
 variable "enable_nat_gateway" {
   description = "Should be true if you want to provision NAT Gateways for each of your private networks"
   type        = bool
@@ -814,13 +800,6 @@ variable "default_vpc_enable_dns_support" {
 
 variable "default_vpc_enable_dns_hostnames" {
   description = "Should be true to enable DNS hostnames in the Default VPC"
-  type        = bool
-  default     = false
-}
-
-# tflint-ignore: terraform_unused_declarations
-variable "default_vpc_enable_classiclink" {
-  description = "[DEPRECATED](https://github.com/hashicorp/terraform/issues/31730) Should be true to enable ClassicLink in the Default VPC"
   type        = bool
   default     = false
 }
