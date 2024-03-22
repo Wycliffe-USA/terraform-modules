@@ -1,5 +1,5 @@
 module "cf_ips" {
-  source = "github.com/wycliffe-usa/terraform-modules//cloudflare/ips?ref=1.7.1"
+  source = "github.com/wycliffe-usa/terraform-modules//cloudflare/ips?ref=1.7.4"
 }
 
 resource "aws_security_group" "cloudflare_https" {
