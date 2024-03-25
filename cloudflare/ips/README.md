@@ -9,6 +9,20 @@ This module is used to pull the current list of IP ranges for Cloudflare for IPv
 
  ~none~
 
+## Required Providers
+terraform {
+  required_providers {
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+      version = "4.x.x"
+    }
+  }
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_token
+}
+
 ## Outputs
 
  - `ipv4_cidrs` - List of IPv4 IP ranges
