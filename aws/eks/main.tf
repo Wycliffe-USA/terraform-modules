@@ -7,7 +7,7 @@ data "aws_availability_zones" "available" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.16.0"
+  version = "~> 20.10"
 
   cluster_name                   = local.name
   cluster_version                = local.cluster_version
@@ -120,17 +120,30 @@ module "eks" {
     }
   }
 
+  tags                 = local.tags
+}
+
+module "eks_aws_auth" {
+  source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
+  version = "~> 20.10"
+
   manage_aws_auth_configmap = true
 
-  aws_auth_users = local.eks_admins_by_user
+  aws_auth_roles = [
+    {
+      rolearn  = "arn:aws:iam::66666666666:role/role1"
+      username = "role1"
+      groups   = ["system:masters"]
+    },
+  ]
 
-  tags                 = local.tags
+  aws_auth_users = local.eks_admins_by_user
 }
 
 #The IRSA module creates an IAM Role for Service Accounts to use in the cluster.
 module "vpc_cni_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
+  version = "~> 5.39.1"
 
   role_name_prefix      = "VPC-CNI-IRSA"
   attach_vpc_cni_policy = true
