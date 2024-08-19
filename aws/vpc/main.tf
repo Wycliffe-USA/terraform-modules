@@ -420,6 +420,7 @@ resource "aws_subnet" "public" {
     local.tags,
     var.public_subnet_tags,
     lookup(var.public_subnet_tags_per_az, each.value.az, {}),
+    each.value.tags,
     {
       Name             = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.public_subnet_suffix}"
       security_posture = "public"
@@ -445,6 +446,7 @@ resource "aws_subnet" "private" {
     local.tags,
     var.private_subnet_tags,
     lookup(var.private_subnet_tags_per_az, each.value.az, {}),
+    each.value.tags,
     {
       Name = lookup(each.value, "name", null) != null ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.private_subnet_suffix}"
       security_posture = "private"
@@ -494,6 +496,7 @@ resource "aws_subnet" "database" {
   tags = merge(
     local.tags,
     var.database_subnet_tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.database_subnet_suffix}"
       security_posture = "private"
@@ -534,6 +537,7 @@ resource "aws_subnet" "kubernetes" {
   tags = merge(
     local.tags,
     var.kubernetes_subnet_tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.kubernetes_subnet_suffix}"
       security_posture = "private"
@@ -558,6 +562,7 @@ resource "aws_subnet" "redshift" {
   tags = merge(
     local.tags,
     var.redshift_subnet_tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.redshift_subnet_suffix}"
       security_posture = "private"
@@ -596,6 +601,7 @@ resource "aws_subnet" "elasticache" {
   tags = merge(
     local.tags,
     var.elasticache_subnet_tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.elasticache_subnet_suffix}"
       security_posture = "private"
@@ -633,6 +639,7 @@ resource "aws_subnet" "intra" {
   tags = merge(
     local.tags,
     var.intra_subnet_tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-${var.intra_subnet_suffix}"
       security_posture = "private"
@@ -652,6 +659,7 @@ resource "aws_subnet" "transit_gateway_attachment" {
 
   tags = merge(
     local.tags,
+    each.value.tags,
     {
       Name = lookup(each.value, "name", "") != "" ? "${each.value.name}" : "${local.name}-${each.value.az}-tgw-attach"
       security_posture = "private"
