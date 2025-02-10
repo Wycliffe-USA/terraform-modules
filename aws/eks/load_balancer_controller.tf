@@ -6,7 +6,7 @@ module "eks_load_balancer_controller" {
 
   app_name = var.app_name
   app_env  = var.app_env
-  source = "github.com/Wycliffe-USA/terraform-modules?ref=1.5.0/aws/eks_load_balancer_controller"
+  source = "github.com/Wycliffe-USA/terraform-modules//aws/eks_load_balancer_controller?ref=1.7.6"
 
   chart_version             = var.load_balancer_controller_helm_chart_version
   cluster_name              = module.eks.cluster_name
