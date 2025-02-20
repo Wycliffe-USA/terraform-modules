@@ -22,30 +22,27 @@ resource "helm_release" "loadbalancer_controller" {
 
   namespace = "kube-system"
 
-  set {
-    name  = "image.repository"
-    value = "602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller" # Changes based on Region - This is for us-east-1 Additional Reference: https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.lbc_iam_role.arn
-  }
-
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
+  set = [
+    {
+      name  = "image.repository"
+      value = "602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller" # Changes based on Region - This is for us-east-1 Additional Reference: https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html
+    },
+    {
+      name  = "serviceAccount.create"
+      value = "true"
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "aws-load-balancer-controller"
+    },
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = aws_iam_role.lbc_iam_role.arn
+    },
+    {
+      name  = "clusterName"
+      value = var.cluster_name
+    }
 
   #Only needed for limited access clusters where different cluster admins have a variety of trust levels.
   # set {
@@ -57,6 +54,7 @@ resource "helm_release" "loadbalancer_controller" {
   #   name  = "region"
   #   value = var.aws_region
   # }
+  ]
 }
 
 /*
