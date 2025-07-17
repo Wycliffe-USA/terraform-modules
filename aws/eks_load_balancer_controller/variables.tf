@@ -14,7 +14,6 @@ variable "chart_version" {
   default     = "1.5.2"
 }
 
-
 variable "cluster_name" {
   description = "EKS cluster name.  Usually derived from module.eks.cluster_name"
   type        = string
