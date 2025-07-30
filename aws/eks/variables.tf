@@ -76,6 +76,15 @@ variable "enable_load_balancer_controller" {
   default     = true
 }
 
+variable "eks_access_admins" {
+  description = "List of IAM roles to add to the EKS access list as cluster admins"
+  type = list(object({
+    entry_name    = string
+    principal_arn = string
+  }))
+  default     = []
+}
+
 variable "system_instance_types" {
   description = "System instance types."
   type        = list(string)
