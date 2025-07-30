@@ -33,6 +33,20 @@ module "eks" {
   subnet_ids               = var.subnet_ids
   control_plane_subnet_ids = var.control_plane_subnet_ids
 
+  access_entries = {
+    for entry in var.eks_access_admins : entry.entry_name => {
+      principal_arn = entry.principal_arn
+      policy_associations = {
+        cluster-admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+
   eks_managed_node_group_defaults = {
     name                 = local.name
     launch_template_name = "${local.name}"
@@ -129,13 +143,7 @@ module "eks_aws_auth" {
 
   manage_aws_auth_configmap = true
 
-  aws_auth_roles = [
-    {
-      rolearn  = "arn:aws:iam::66666666666:role/role1"
-      username = "role1"
-      groups   = ["system:masters"]
-    },
-  ]
+  aws_auth_roles = []
 
   aws_auth_users = local.eks_admins_by_user
 }
